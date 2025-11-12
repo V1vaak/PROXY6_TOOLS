@@ -3,7 +3,7 @@ from requests import get
 
 class Proxy6:
     """
-    Класс для взаимодействия с API Proxy6.
+    Класс для взаимодействия с API Proxy6. Сайт (https://px6.me/).
     
     Parameters
     ----------
@@ -352,4 +352,5 @@ class Proxy6:
             Информация о статусе API.
         """
         url = f'https://px6.link/api/{self.api}'
+
         return str(get(url).json())
