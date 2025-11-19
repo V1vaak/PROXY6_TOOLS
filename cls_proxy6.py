@@ -3,7 +3,7 @@ from requests import get
 
 class Proxy6:
     """
-    Класс для взаимодействия с API Proxy6. Сайт (https://px6.me/).
+    Класс для взаимодействия с API PROXY6. Сайт (https://px6.me/ru/)
     
     Parameters
     ----------
@@ -13,28 +13,29 @@ class Proxy6:
     
     def __init__(self, api: str):
         self.api = api
+        self.url = f'https://px6.link/api/{self.api}/'
 
-    def __get_url(self, method_name: str, **params) -> str:
-        '''
-        Функция возвращает готовую ссылку для get запроса 
-        с учетом метода и его параметров.
+    # def __get_url(self, method_name: str, **params) -> str:
+    #     '''
+    #     Функция возвращает готовую ссылку для get запроса 
+    #     с учетом метода и его параметров.
 
-        Notes
-        -----
-        Функция для внутреклассового использования (служебная).
-        '''
-        url = f'https://px6.link/api/{self.api}/{method_name}?'
+    #     Notes
+    #     -----
+    #     Функция для внутреклассового использования (служебная).
+    #     '''
+    #     url = f'https://px6.link/api/{self.api}/{method_name}?'
 
-        cnt = len(params)
-        i = 1
-        for key in params:
-            value = params[key]
-            if isinstance(value, tuple):
-                value = str(value).replace('(', '').replace(')', '').replace(' ', '')
-            url += f'{key}={value}' if cnt == i else f'{key}={value}&'
-            i += 1
+    #     cnt = len(params)
+    #     i = 1
+    #     for key in params:
+    #         value = params[key]
+    #         if isinstance(value, tuple):
+    #             value = str(value).replace('(', '').replace(')', '').replace(' ', '')
+    #         url += f'{key}={value}' if cnt == i else f'{key}={value}&'
+    #         i += 1
 
-        return url
+    #     return url
     
     def __have_connection(self, data: dict) -> bool[True]:
         """
@@ -52,7 +53,7 @@ class Proxy6:
         Raises
         ------
         Exception
-            Если не удалось подключиться (статус 'no').
+            Если не удалось подключиться ({status: 'no'}).
         
         Notes
         -----
@@ -63,7 +64,7 @@ class Proxy6:
             return True
         raise Exception('NoConection')
     
-    def getprice(self, *, count: int, period: int, version: int = 6) -> int | float:
+    def get_price(self, *, count: int, period: int, version: int = 6) -> int | float:
         """
         Получает стоимость покупки прокси.
 
@@ -81,13 +82,15 @@ class Proxy6:
         int or float
             Стоимость прокси в <b>рублях</b> (ru, RUB).
         """
-        url = self.__get_url(self.getprice.__name__, count=count, period=period, version=version)
-        data = get(url).json()
+        url = self.url + 'getprice'
+        params = {'count': count, 'period': period, 'version': version}
+        
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return data['price']
     
-    def getcount(self, *, country: str, version: int = 6) -> int:
+    def get_count(self, *, country: str, version: int = 6) -> int:
         """
         Получает количество доступных прокси для определенной страны.
 
@@ -100,16 +103,18 @@ class Proxy6:
 
         Returns
         -------
-        int
+        int  
             Количество доступных прокси.
         """
-        url = self.__get_url(self.getcount.__name__, country=country, version=version)
-        data = get(url).json()
+        url = self.url + 'getcount'
+        params = {'country': country, 'version': version}
+
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return data['count']
     
-    def getcountry(self, *, version: int = 6) -> list:
+    def get_country(self, *, version: int = 6) -> list:
         """
         Получает все страны, прокси которых можно приобрести.
 
@@ -123,13 +128,15 @@ class Proxy6:
         list[str, ..., str]
             Список доступных стран.
         """
-        url = self.__get_url(self.getcountry.__name__, version=version)
-        data = get(url).json()
+        url = self.url + 'getcountry'
+        params = {'version': version}
+
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return data['list']
     
-    def getproxy(self, *, state: str = 'all', descr: str = None, 
+    def get_proxy(self, *, state: str = 'all', descr: str = None, 
                 page: int = 1, limit: int = 1000) -> dict:
         """
         Получает информацию о прокси объекта класса Proxy6.
@@ -151,17 +158,15 @@ class Proxy6:
         dict
             Информация о прокси.
         """
-        if descr:       
-            url = self.__get_url(self.getproxy.__name__, state=state, descr=descr, page=page, limit=limit)
-        else:
-            url = self.__get_url(self.getproxy.__name__, state=state, page=page, limit=limit)
-        
-        data = get(url).json()
+        url = self.url + 'getproxy' 
+        params = {'state': state, 'descr': descr, 'page': page, 'limit': limit}
+
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return data['list']
         
-    def settype(self, *, ids: tuple, type: str) -> bool[True]:
+    def set_type(self, *, ids: tuple, type: str) -> bool[True]:
         """
         Изменяет тип (протокол) ваших прокси.
 
@@ -176,13 +181,15 @@ class Proxy6:
         -------
         True, если успешно.
         """
-        url = self.__get_url(self.settype.__name__, ids=ids, type=type)
-        data = get(url).json()
+        url = self.url + 'settype'
+        params = {'ids': ids, 'type': type}
+
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return True
 
-    def setdescr(self, *, new: str, old: str = None, ids: tuple = None) -> tuple:
+    def set_descr(self, *, new: str, old: str = None, ids: tuple = None) -> tuple:
         """
         Обновляет технический комментарий у ваших прокси.
 
@@ -204,12 +211,10 @@ class Proxy6:
         -----
         Обязательно должен присутствовать один из параметров: либо 'ids', либо 'old'.
         """
-        if old and not ids:
-            url = self.__get_url(self.setdescr.__name__, new=new, old=old)
-        elif ids and not old:
-            url = self.__get_url(self.setdescr.__name__, new=new, ids=ids)
+        url = self.url + 'setdescr'
+        params = {'new': new, 'old': old, 'ids': ids}
         
-        data = get(url).json()
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return True, data['count']
@@ -241,25 +246,12 @@ class Proxy6:
         dict
             Список купленных прокси.
         """
-        if descr and auto_prolong:
-            url = self.__get_url(self.buy.__name__, count=count, 
-                                 period=period, country=country, 
-                                 version=version, type=type, 
-                                 descr=descr, auto_prolong=auto_prolong)
-        elif descr:
-            url = self.__get_url(self.buy.__name__, count=count, 
-                                 period=period, country=country, 
-                                 version=version, type=type, 
-                                 descr=descr)
-        elif auto_prolong:
-            url = self.__get_url(self.buy.__name__, count=count, 
-                                 period=period, country=country, 
-                                 version=version, type=type, 
-                                 auto_prolong=auto_prolong)
-        else:
-            url = self.__get_url(self.buy.__name__, count=count, period=period, country=country, version=version, type=type)
-
-        data = get(url).json()
+        url = self.url + 'buy'
+        params = {'count': count, 'period': period, 
+                  'country': country, 'version': version, 
+                  'type': type, 'descr': descr, 'auto_prolong': auto_prolong}
+        
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return data['list']
@@ -279,8 +271,10 @@ class Proxy6:
         -------
         True, если успешно.
         """
-        url = self.__get_url(self.prolong.__name__, period=period, ids=ids)
-        data = get(url).json()
+        url = self.url + 'prolong'
+        params = {'period': period, 'ids': ids}
+
+        data = get(url, params=params).json()
         
         if self.__have_connection(data):
             return True
@@ -304,14 +298,10 @@ class Proxy6:
         -----
         Обязательно должен присутствовать один из параметров: либо 'ids', либо 'descr'.
         """
-        if ids and descr:
-            url = self.__get_url(self.delete.__name__, ids=ids, descr=descr)
-        elif ids:
-            url = self.__get_url(self.delete.__name__, ids=ids)
-        else:
-            url = self.__get_url(self.delete.__name__, descr=descr)
+        url = self.url + 'delete'
+        params = {'ids': ids, 'descr': descr}
 
-        data = get(url).json()
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return True
@@ -332,25 +322,22 @@ class Proxy6:
         bool
             True если прокси валиден, False в противном случае.
         """
-        if ids:
-            url = self.__get_url(self.check.__name__, ids=ids)
-        elif proxy:
-            url = self.__get_url(self.check.__name__, proxy=proxy)
+        url = self.url + 'check'
+        params = {'ids': ids, 'proxy': proxy}
         
-        data = get(url).json()
+        data = get(url, params=params).json()
 
         if self.__have_connection(data):
             return data['proxy_status']
 
     def __str__(self) -> str:
         """
-        Возвращает строковое представление статуса API.
+        Возвращает базовую информацию о пользователе.
 
         Returns
         -------
         str
-            Информация о статусе API.
+            Базовая информация о пользователе.
         """
         url = f'https://px6.link/api/{self.api}'
-
         return str(get(url).json())
