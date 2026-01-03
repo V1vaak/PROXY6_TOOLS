@@ -1,3 +1,13 @@
+"""
+Proxy6 API Client
+
+Copyright (c) 2026 Alexsey Novikov
+
+Распространяется под лицензией MIT.
+Подробнее см. в файле LICENSE или на https://opensource.org/licenses/MIT.
+"""
+
+
 import requests
 import aiohttp 
 
@@ -770,3 +780,4 @@ class AsyncProxy6:
         if self.session:
             await self.session.close()
             self.session = None
+
