@@ -1,3 +1,11 @@
-Классы для работы с API сайта (https://px6.me/ru/)
+# Proxy6 Python Client
 
-Один - синхронный (Proxy6), другой - асинхронный (AsyncProxy6)
+Python-клиенты для работы с [API PROXY6](https://px6.me/ru/).  
+Содержит **синхронный** (`Proxy6`) и **асинхронный** (`AsyncProxy6`) классы, а также исключение `Proxy6Error` для обработки ошибок.
+
+---
+
+## Установка
+
+```bash
+pip install requests aiohttp
