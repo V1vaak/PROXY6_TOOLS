@@ -5,18 +5,23 @@
 
 ## Описание
 Синхронный и асинхронный клиенты для взаимодействия с API сервиса Proxy6 (https://px6.me/).
-- [Официальная документация Proxy6 API](https://px6.me/ru/developers)
+### Ссылки
 - [Официальный сайт Proxy6](https://px6.me/)
+- [Официальная документация Proxy6 API](https://px6.me/ru/developers)
+- [Получение API ключа](https://px6.me/ru/user/developers)
 
 ## Установка
 
 ```bash
+# Клонировать репозиторий
+git clone https://github.com/V1vaak/PROXY6_TOOLS
+cd PROXY6_TOOLS
+
+# Установка нужных библиотек
 pip install requests aiohttp
 ```
 
-## Быстрый старт
-
-### Синхронный клиент
+## Синхронный клиент
 
 ```python
 from proxy6_client import Proxy6
@@ -49,7 +54,7 @@ finally:
     client.close()
 ```
 
-### Асинхронный клиент
+## Асинхронный клиент
 
 ```python
 import asyncio
