@@ -385,7 +385,7 @@ class AsyncProxy6:
     def __init__(self, api: str):
         self.api = api
         self.url = f'https://px6.link/api/{self.api}/'
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
         """
@@ -681,7 +681,7 @@ class AsyncProxy6:
         if self.__have_connection(data):
             return data['list']
         
-    async def prolong(self, *, period: int, ids: Union[int, tuple]) -> bool:
+    async def prolong(self, *, period: int, ids: int | tuple) -> bool:
         """
         Продлевает текущие прокси.
 
