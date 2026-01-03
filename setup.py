@@ -10,11 +10,11 @@ setup(
     ],
     license='MIT',
     author='Aleksey Novikov',
-    author_email='lexnovmop@yandex.ru',
+    author_email='...',
     description='Клиент для API Proxy6',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/ваш-username/proxy6-client',
+    url='https://github.com/V1vaak/PROXY6_TOOLS',
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
@@ -23,4 +23,5 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
     ],
+
 )
