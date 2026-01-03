@@ -345,6 +345,18 @@ class Proxy6:
         return str(get(url).json())
     
 
+class Proxy6Error(Exception):
+    """
+    Исключение, возникающее при ошибках взаимодействия с API Proxy6.
+
+    Используется для обозначения:
+    - сетевых ошибок (таймауты, обрывы соединения);
+    - ошибок HTTP-уровня;
+    - ошибок, возвращаемых самим API Proxy6.
+    """
+    ...
+
+
 class AsyncProxy6:
     """
     Асинхронный класс для взаимодействия с API PROXY6. Сайт (https://px6.me/ru/)
@@ -361,97 +373,140 @@ class AsyncProxy6:
         self.session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self):
-        """Контекстный менеджер для автоматического создания сессии."""
-        self.session = aiohttp.ClientSession()
+        """
+        Входит в асинхронный контекст и инициализирует HTTP-сессию.
+
+        Создает aiohttp.ClientSession с настроенным таймаутом,
+        чтобы предотвратить зависание запросов при проблемах с сетью
+        или медленном ответе API.
+
+        Returns
+        -------
+        AsyncProxy6
+            Экземпляр клиента Proxy6 с активной HTTP-сессией.
+        """
+        timeout = aiohttp.ClientTimeout(total=10)
+        self.session = aiohttp.ClientSession(timeout=timeout)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Закрытие сессии при выходе из контекста."""
+        """
+        Завершает асинхронный контекст и корректно закрывает HTTP-сессию.
+
+        Гарантирует освобождение сетевых ресурсов независимо от того,
+        завершился ли блок `async with` успешно или с исключением.
+        """
         if self.session:
             await self.session.close()
+            self.session = None
+
 
     async def _get_session(self) -> aiohttp.ClientSession:
-        """Получает или создает сессию."""
-        if self.session is None:
-            self.session = aiohttp.ClientSession()
+        """
+        Возвращает активную HTTP-сессию клиента.
+
+        Raises
+        ------
+        RuntimeError
+            Если сессия не была инициализирована и клиент используется
+            вне асинхронного контекстного менеджера.
+        """
+        if not self.session:
+            raise RuntimeError("ClientSession not initialized. Use 'async with AsyncProxy6(...)'")
         return self.session
 
     async def _make_request(self, method_name: str, **params) -> dict:
         """
-        Выполняет асинхронный GET-запрос к API.
-        
+        Выполняет асинхронный HTTP-запрос к API Proxy6.
+
+        Формирует GET-запрос к указанному методу API, подготавливает параметры
+        и обрабатывает сетевые ошибки.
+
         Parameters
         ----------
         method_name : str
-            Название метода API.
+            Название метода API Proxy6.
         **params : dict
-            Параметры запроса.
-            
+            Параметры запроса, передаваемые в API.
+
         Returns
         -------
         dict
             Ответ API в формате JSON.
+
+        Raises
+        ------
+        Proxy6Error
+            При сетевых ошибках, таймаутах или HTTP-ошибках.
+        RuntimeError
+            Если HTTP-сессия не была инициализирована.
         """
         session = await self._get_session()
         url = f'{self.url}{method_name}'
-        
-        # Преобразуем параметры для aiohttp
+
         prepared_params = {}
         for key, value in params.items():
             if value is not None:
                 if isinstance(value, tuple):
-                    value = str(value).replace('(', '').replace(')', '').replace(' ', '')
+                    value = ','.join(map(str, value))
                 prepared_params[key] = value
-        
-        async with session.get(url, params=prepared_params) as response:
-            response.raise_for_status()
-            return await response.json()
 
-    def __have_connection(self, data: dict) -> bool:
+        try:
+            async with session.get(url, params=prepared_params) as response:
+                response.raise_for_status()
+                return await response.json()
+        except aiohttp.ClientError as e:
+            raise Proxy6Error(f"HTTP error while calling {method_name}: {e}")
+
+
+    def _check_status(self, data: dict) -> None:
         """
-        Проверяет подключение к API.
+        Проверяет успешность ответа API Proxy6.
+
+        Анализирует поле `status` в ответе API и выбрасывает исключение
+        в случае ошибки.
 
         Parameters
         ----------
         data : dict
-            Данные ответа API.
-
-        Returns
-        -------
-        True, если есть успешное подключение.
+            Ответ API Proxy6.
 
         Raises
         ------
-        Exception
-            Если не удалось подключиться ({status: 'no'}).
-        """     
-        if data['status'] == 'yes':
-            return True
-        raise Exception('NoConnection')
-    
-    async def get_price(self, *, count: int, period: int, version: int = 6) -> Union[int, float]:
+        Proxy6Error
+            Если API вернул статус, отличный от успешного.
         """
-        Получает стоимость покупки прокси.
+        if data.get('status') != 'yes':
+            raise Proxy6Error(f"API error: {data}")
+
+    
+    async def get_price(self, *, count: int, period: int, version: int = 6) -> int | float:
+        """
+        Возвращает стоимость покупки прокси.
 
         Parameters
         ----------
         count : int
-            Количество прокси (обязательный параметр).
+            Количество приобретаемых прокси.
         period : int
-            Период в днях (обязательный параметр).
+            Период аренды в днях.
         version : int, optional
-            Версия прокси: <b>4</b> - IPv4, <b>3</b> - IPv4 Shared, <b>6</b> - IPv6 (по умолчанию 6).
+            Версия прокси (по умолчанию IPv6).
 
         Returns
         -------
-        int or float
-            Стоимость прокси в <b>рублях</b> (ru, RUB).
+        int | float
+            Стоимость прокси в рублях.
+
+        Raises
+        ------
+        Proxy6Error
+            При ошибке API или сетевой ошибке.
         """
         data = await self._make_request('getprice', count=count, period=period, version=version)
-        
-        if self.__have_connection(data):
-            return data['price']
-    
+        self._check_status(data)
+        return data['price']
+
     async def get_count(self, *, country: str, version: int = 6) -> int:
         """
         Получает количество доступных прокси для определенной страны.
@@ -473,25 +528,32 @@ class AsyncProxy6:
         if self.__have_connection(data):
             return data['count']
     
-    async def get_country(self, *, version: int = 6) -> list:
+    async def get_country(self, *, version: int = 6) -> list[str]:
         """
-        Получает все страны, прокси которых можно приобрести.
+        Возвращает список стран, в которых доступны прокси указанной версии.
 
         Parameters
         ----------
         version : int, optional
-            Версия прокси: <b>4</b> - IPv4, <b>3</b> - IPv4 Shared, <b>6</b> - IPv6 (по умолчанию 6).
+            Версия прокси:
+            - 4 — IPv4
+            - 3 — IPv4 Shared
+            - 6 — IPv6 (по умолчанию)
 
         Returns
         -------
-        list[str, ..., str]
-            Список доступных стран.
+        list[str]
+            Список кодов стран в формате ISO 3166-1 alpha-2.
+
+        Raises
+        ------
+        Proxy6Error
+            При ошибке API или сетевой ошибке.
         """
         data = await self._make_request('getcountry', version=version)
+        self._check_status(data)
+        return data['list']
 
-        if self.__have_connection(data):
-            return data['list']
-    
     async def get_proxy(self, *, state: str = 'all', descr: str = None, 
                        page: int = 1, limit: int = 1000) -> dict:
         """
@@ -594,9 +656,12 @@ class AsyncProxy6:
         dict
             Список купленных прокси.
         """
+        # Преобразуем bool в строку для API
+        auto_prolong_str = "1" if auto_prolong else "0"
+        
         data = await self._make_request('buy', count=count, period=period, 
                                         country=country, version=version, 
-                                        type=type, descr=descr, auto_prolong=auto_prolong)
+                                        type=type, descr=descr, auto_prolong=auto_prolong_str)
 
         if self.__have_connection(data):
             return data['list']
@@ -666,21 +731,24 @@ class AsyncProxy6:
         if self.__have_connection(data):
             return data['proxy_status']
 
-    async def __a_str(self) -> str:
+    async def info(self) -> dict:
         """
-        Асинхронно возвращает базовую информацию о пользователе.
+        Возвращает базовую информацию об аккаунте Proxy6.
 
         Returns
         -------
-        str
-            Базовая информация о пользователе.
+        dict
+            Информация об аккаунте и текущем статусе API.
+
+        Raises
+        ------
+        Proxy6Error
+            При сетевой ошибке или ошибке API.
         """
         session = await self._get_session()
-        url = f'https://px6.link/api/{self.api}'
-        async with session.get(url) as response:
+        async with session.get(f'https://px6.link/api/{self.api}') as response:
             response.raise_for_status()
-            data = await response.json()
-            return str(data)
+            return await response.json()
 
     async def close(self):
         """Закрывает сессию вручную."""
