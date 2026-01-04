@@ -36,7 +36,7 @@ class Proxy6:
         API-ключ для аутентификации в сервисе Proxy6.
     """
 
-    BASE_URL = "https://px6.link/api"
+    BASE_URL = 'https://px6.link/api'
 
     def __init__(self, api: str) -> None:
         """
@@ -47,16 +47,16 @@ class Proxy6:
         api : str
             API-ключ для Proxy6.
         """
-        self.api: str = api
-        self.url: str = f"{self.BASE_URL}/{self.api}/"
+        self.api = api
+        self.url = f'{self.BASE_URL}/{self.api}/'
         self.session: requests.Session = requests.Session()
 
-    def _prepare_params(self, params: dict[str, object]) -> dict[str, object]:
+    def _prepare_params(self, params: dict) -> dict:
         """
         Подготавливает параметры запроса:
         - удаляет None
-        - кортежи преобразует в строку формата "1,2,3"
-        - булевы значения переводит в "1" или "0"
+        - кортежи преобразует в строку формата '1,2,3'
+        - булевы значения переводит в '1' или None
 
         Parameters
         ----------
@@ -68,19 +68,19 @@ class Proxy6:
         dict[str, object]
             Подготовленные параметры запроса.
         """
-        prepared: dict[str, object] = {}
+        prepared = {}
         for key, value in params.items():
             if value is None:
                 continue
             if isinstance(value, tuple):
-                prepared[key] = ",".join(map(str, value))
+                prepared[key] = ','.join(map(str, value))
             elif isinstance(value, bool):
-                prepared[key] = "1" if value else "0"
+                prepared[key] = '1' if value else None
             else:
                 prepared[key] = value
         return prepared
 
-    def _make_request(self, method_name: str, **params: object) -> dict[str, object]:
+    def _make_request(self, method_name: str, **params: object) -> dict:
         """
         Выполняет GET-запрос к API Proxy6.
 
@@ -101,7 +101,7 @@ class Proxy6:
         Proxy6Error
             При ошибке HTTP или если статус ответа != 'yes'.
         """
-        url: str = f"{self.url}{method_name}"
+        url: str = f'{self.url}{method_name}'
         prepared_params = self._prepare_params(params)
 
         try:
@@ -109,12 +109,12 @@ class Proxy6:
             response.raise_for_status()
             data: dict[str, object] = response.json()
         except requests.RequestException as e:
-            raise Proxy6Error(f"HTTP error: {e}") from e
+            raise Proxy6Error(f'HTTP error: {e}') from e
         except ValueError:
-            raise Proxy6Error("Invalid JSON response from API")
+            raise Proxy6Error('Invalid JSON response from API')
 
-        if data.get("status") != "yes":
-            raise Proxy6Error(data.get("error", "Unknown API error"))
+        if data.get('status') != 'yes':
+            raise Proxy6Error(data.get('error', 'Unknown API error'))
 
         return data
 
@@ -136,8 +136,8 @@ class Proxy6:
         float | int
             Стоимость в рублях.
         """
-        data = self._make_request("getprice", count=count, period=period, version=version)
-        return data["price"]
+        data = self._make_request('getprice', count=count, period=period, version=version)
+        return data['price']
 
     def get_count(self, *, country: str, version: int = 6) -> int:
         """
@@ -155,8 +155,8 @@ class Proxy6:
         int
             Количество доступных прокси.
         """
-        data = self._make_request("getcount", country=country, version=version)
-        return data["count"]
+        data = self._make_request('getcount', country=country, version=version)
+        return data['count']
 
     def get_country(self, *, version: int = 6) -> list[str]:
         """
@@ -172,17 +172,17 @@ class Proxy6:
         list[str]
             Список кодов стран (ISO2).
         """
-        data = self._make_request("getcountry", version=version)
-        return data["list"]
+        data = self._make_request('getcountry', version=version)
+        return data['list']
 
     def get_proxy(
         self,
         *,
-        state: str = "all",
+        state: str = 'all',
         descr: str | None = None,
         page: int = 1,
         limit: int = 1000,
-    ) -> dict[str, object]:
+    ) -> dict:
         """
         Получает список прокси пользователя.
 
@@ -203,13 +203,13 @@ class Proxy6:
             Список прокси.
         """
         data = self._make_request(
-            "getproxy",
+            'getproxy',
             state=state,
             descr=descr,
             page=page,
             limit=limit,
         )
-        return data["list"]
+        return data['list']
 
     def set_type(self, *, ids: tuple[int, ...], type: str) -> bool:
         """
@@ -220,14 +220,14 @@ class Proxy6:
         ids : tuple[int, ...]
             Внутренние ID прокси.
         type : str
-            Тип протокола: 'http' или 'socks'.
+            Устанавливаемый тип (протокол): http - HTTPS, либо socks - SOCKS5
 
         Returns
         -------
         bool
             True при успешной смене типа.
         """
-        self._make_request("settype", ids=ids, type=type)
+        self._make_request('settype', ids=ids, type=type)
         return True
 
     def set_descr(
@@ -253,9 +253,13 @@ class Proxy6:
         -------
         tuple[bool, int]
             Кортеж: (успех операции, количество обновленных прокси)
+        
+        Notes
+        -----
+        Обязательно должен присутствовать один из параметров: либо 'ids', либо 'old'.
         """
-        data = self._make_request("setdescr", new=new, old=old, ids=ids)
-        return True, data["count"]
+        data = self._make_request('setdescr', new=new, old=old, ids=ids)
+        return True, data['count']
 
     def buy(
         self,
@@ -264,10 +268,10 @@ class Proxy6:
         period: int,
         country: str,
         version: int = 6,
-        type: str = "http",
+        type: str = 'http',
         descr: str | None = None,
         auto_prolong: bool = False,
-    ) -> dict[str, object]:
+    ) -> dict:
         """
         Покупает прокси.
 
@@ -294,7 +298,7 @@ class Proxy6:
             Список купленных прокси.
         """
         data = self._make_request(
-            "buy",
+            'buy',
             count=count,
             period=period,
             country=country,
@@ -303,7 +307,7 @@ class Proxy6:
             descr=descr,
             auto_prolong=auto_prolong,
         )
-        return data["list"]
+        return data['list']
 
     def prolong(self, *, period: int, ids: int | tuple[int, ...]) -> bool:
         """
@@ -321,7 +325,7 @@ class Proxy6:
         bool
             True при успешном продлении.
         """
-        self._make_request("prolong", period=period, ids=ids)
+        self._make_request('prolong', period=period, ids=ids)
         return True
 
     def delete(self, *, ids: int | None = None, descr: str | None = None) -> bool:
@@ -339,8 +343,12 @@ class Proxy6:
         -------
         bool
             True при успешном удалении.
+
+        Notes
+        -----
+        Обязательно должен присутствовать один из параметров: либо 'ids', либо 'old'.
         """
-        self._make_request("delete", ids=ids, descr=descr)
+        self._make_request('delete', ids=ids, descr=descr)
         return True
 
     def check(self, *, ids: int | None = None, proxy: str | None = None) -> bool:
@@ -349,18 +357,18 @@ class Proxy6:
 
         Parameters
         ----------
-        ids : int | None, optional
-            ID прокси.
-        proxy : str | None, optional
-            Прокси в формате "IP:PORT".
+        ids : int, optional
+            Внутренний номер прокси в системе (обязательный если не указан proxy).
+        proxy : str, optional
+            Строка прокси в формате: ip:port:user:pass (обязательный если не указан ids).
 
         Returns
         -------
         bool
             True если прокси валиден.
         """
-        data = self._make_request("check", ids=ids, proxy=proxy)
-        return bool(data["proxy_status"])
+        data = self._make_request('check', ids=ids, proxy=proxy)
+        return True if data['proxy_status'] == 'true' else False
 
     def close(self) -> None:
         """
@@ -377,7 +385,7 @@ class Proxy6:
         str
             Информация об аккаунте в формате JSON.
         """
-        response = self.session.get(f"{self.BASE_URL}/{self.api}")
+        response = self.session.get(f'{self.BASE_URL}/{self.api}')
         response.raise_for_status()
         return str(response.json())
 
@@ -426,7 +434,7 @@ class AsyncProxy6:
             self.session = None
 
 
-    async def _get_session(self) -> aiohttp.ClientSession:
+    async def __get_session(self) -> aiohttp.ClientSession:
         """
         Возвращает активную HTTP-сессию клиента.
 
@@ -440,7 +448,7 @@ class AsyncProxy6:
             raise RuntimeError("ClientSession not initialized. Use 'async with AsyncProxy6(...)'")
         return self.session
 
-    async def _make_request(self, method_name: str, **params) -> dict:
+    async def __make_request(self, method_name: str, **params) -> dict:
         """
         Выполняет асинхронный HTTP-запрос к API Proxy6.
 
@@ -466,7 +474,7 @@ class AsyncProxy6:
         RuntimeError
             Если HTTP-сессия не была инициализирована.
         """
-        session = await self._get_session()
+        session = await self.__get_session()
         url = f'{self.url}{method_name}'
 
         prepared_params = {}
@@ -481,10 +489,10 @@ class AsyncProxy6:
                 response.raise_for_status()
                 return await response.json()
         except aiohttp.ClientError as e:
-            raise Proxy6Error(f"HTTP error while calling {method_name}: {e}")
+            raise Proxy6Error(f'HTTP error while calling {method_name}: {e}')
 
 
-    def _check_status(self, data: dict) -> None:
+    def __check_status(self, data: dict) -> None:
         """
         Проверяет успешность ответа API Proxy6.
 
@@ -502,7 +510,7 @@ class AsyncProxy6:
             Если API вернул статус, отличный от успешного.
         """
         if data.get('status') != 'yes':
-            raise Proxy6Error(f"API error: {data}")
+            raise Proxy6Error(f'API error: {data}')
 
     
     async def get_price(self, *, count: int, period: int, version: int = 6) -> int | float:
@@ -528,8 +536,8 @@ class AsyncProxy6:
         Proxy6Error
             При ошибке API или сетевой ошибке.
         """
-        data = await self._make_request('getprice', count=count, period=period, version=version)
-        self._check_status(data)
+        data = await self.__make_request('getprice', count=count, period=period, version=version)
+        self.__check_status(data)
         return data['price']
 
     async def get_count(self, *, country: str, version: int = 6) -> int:
@@ -548,10 +556,10 @@ class AsyncProxy6:
         int  
             Количество доступных прокси.
         """
-        data = await self._make_request('getcount', country=country, version=version)
+        data = await self.__make_request('getcount', country=country, version=version)
 
-        if self.__have_connection(data):
-            return data['count']
+        self.__check_status(data)
+        return data['count']
     
     async def get_country(self, *, version: int = 6) -> list[str]:
         """
@@ -575,8 +583,8 @@ class AsyncProxy6:
         Proxy6Error
             При ошибке API или сетевой ошибке.
         """
-        data = await self._make_request('getcountry', version=version)
-        self._check_status(data)
+        data = await self.__make_request('getcountry', version=version)
+        self.__check_status(data)
         return data['list']
 
     async def get_proxy(self, *, state: str = 'all', descr: str = None, 
@@ -601,11 +609,11 @@ class AsyncProxy6:
         dict
             Информация о прокси.
         """
-        data = await self._make_request('getproxy', state=state, descr=descr, 
+        data = await self.__make_request('getproxy', state=state, descr=descr, 
                                         page=page, limit=limit)
 
-        if self.__have_connection(data):
-            return data['list']
+        self.__check_status(data)
+        return data['list']
         
     async def set_type(self, *, ids: tuple, type: str) -> bool:
         """
@@ -622,10 +630,10 @@ class AsyncProxy6:
         -------
         True, если успешно.
         """
-        data = await self._make_request('settype', ids=ids, type=type)
+        data = await self.__make_request('settype', ids=ids, type=type)
 
-        if self.__have_connection(data):
-            return True
+        self.__check_status(data)
+        return True
 
     async def set_descr(self, *, new: str, old: str = None, ids: tuple = None) -> tuple:
         """
@@ -649,10 +657,10 @@ class AsyncProxy6:
         -----
         Обязательно должен присутствовать один из параметров: либо 'ids', либо 'old'.
         """
-        data = await self._make_request('setdescr', new=new, old=old, ids=ids)
+        data = await self.__make_request('setdescr', new=new, old=old, ids=ids)
 
-        if self.__have_connection(data):
-            return True, data['count']
+        self.__check_status(data)
+        return True, data['count']
                 
     async def buy(self, *, count: int, period: int, country: str, version: int = 6, 
                   type: str = 'http', descr: str = None, auto_prolong: bool = False) -> dict:
@@ -681,15 +689,14 @@ class AsyncProxy6:
         dict
             Список купленных прокси.
         """
-        # Преобразуем bool в строку для API
-        auto_prolong_str = "1" if auto_prolong else "0"
+        auto_prolong = auto_prolong if auto_prolong else None
         
-        data = await self._make_request('buy', count=count, period=period, 
+        data = await self.__make_request('buy', count=count, period=period, 
                                         country=country, version=version, 
-                                        type=type, descr=descr, auto_prolong=auto_prolong_str)
+                                        type=type, descr=descr, auto_prolong=auto_prolong)
 
-        if self.__have_connection(data):
-            return data['list']
+        self.__check_status(data)
+        return data['list']
         
     async def prolong(self, *, period: int, ids: int | tuple) -> bool:
         """
@@ -706,10 +713,10 @@ class AsyncProxy6:
         -------
         True, если успешно.
         """
-        data = await self._make_request('prolong', period=period, ids=ids)
+        data = await self.__make_request('prolong', period=period, ids=ids)
         
-        if self.__have_connection(data):
-            return True
+        self.__check_status(data)
+        return True
         
     async def delete(self, *, ids: int = None, descr: str = None) -> bool:
         """
@@ -730,10 +737,10 @@ class AsyncProxy6:
         -----
         Обязательно должен присутствовать один из параметров: либо 'ids', либо 'descr'.
         """
-        data = await self._make_request('delete', ids=ids, descr=descr)
+        data = await self.__make_request('delete', ids=ids, descr=descr)
 
-        if self.__have_connection(data):
-            return True
+        self.__check_status(data)
+        return True
         
     async def check(self, *, ids: int = None, proxy: str = None) -> bool:
         """
@@ -751,10 +758,10 @@ class AsyncProxy6:
         bool
             True если прокси валиден, False в противном случае.
         """
-        data = await self._make_request('check', ids=ids, proxy=proxy)
+        data = await self.__make_request('check', ids=ids, proxy=proxy)
 
-        if self.__have_connection(data):
-            return data['proxy_status']
+        self.__check_status(data)
+        return data['proxy_status']
 
     async def info(self) -> dict:
         """
@@ -770,7 +777,7 @@ class AsyncProxy6:
         Proxy6Error
             При сетевой ошибке или ошибке API.
         """
-        session = await self._get_session()
+        session = await self.__get_session()
         async with session.get(f'https://px6.link/api/{self.api}') as response:
             response.raise_for_status()
             return await response.json()
@@ -780,4 +787,3 @@ class AsyncProxy6:
         if self.session:
             await self.session.close()
             self.session = None
-
