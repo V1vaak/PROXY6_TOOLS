@@ -294,8 +294,8 @@ class Proxy6:
 
         Returns
         -------
-        dict[str, object]
-            Список купленных прокси.
+        dict
+            Данные купленных прокси.
         """
         data = self._make_request(
             'buy',
@@ -307,7 +307,7 @@ class Proxy6:
             descr=descr,
             auto_prolong=auto_prolong,
         )
-        return data['list']
+        return data
 
     def prolong(self, *, period: int, ids: int | tuple[int, ...]) -> bool:
         """
@@ -418,7 +418,11 @@ class AsyncProxy6:
         AsyncProxy6
             Экземпляр клиента Proxy6 с активной HTTP-сессией.
         """
-        timeout = aiohttp.ClientTimeout(total=10)
+        timeout = aiohttp.ClientTimeout(
+                                        total=30,
+                                        connect=10,
+                                        sock_read=30
+                                        )
         self.session = aiohttp.ClientSession(timeout=timeout)
         return self
 
@@ -687,7 +691,7 @@ class AsyncProxy6:
         Returns
         -------
         dict
-            Список купленных прокси.
+            Данные купленных прокси.
         """
         auto_prolong = auto_prolong if auto_prolong else None
         
@@ -696,7 +700,7 @@ class AsyncProxy6:
                                         type=type, descr=descr, auto_prolong=auto_prolong)
 
         self.__check_status(data)
-        return data['list']
+        return data
         
     async def prolong(self, *, period: int, ids: int | tuple) -> bool:
         """
