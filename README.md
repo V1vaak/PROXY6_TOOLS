@@ -1,4 +1,4 @@
-# 🔌 Proxy6 API Client
+# 🔌 Proxy6 Python Client
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![AIOHTTP](https://img.shields.io/badge/aiohttp-3.9+-blueviolet.svg)
@@ -31,8 +31,8 @@
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/V1vaak/PROXY6_TOOLS
-cd PROXY6_TOOLS
+git clone https://github.com/V1vaak/proxy6-python-client.git
+cd proxy6-python-client
 
 # Устанавливаем зависимости
 pip install -r requirements.txt
