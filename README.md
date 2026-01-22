@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![AIOHTTP](https://img.shields.io/badge/aiohttp-3.9+-blueviolet.svg)
 ![Requests](https://img.shields.io/badge/requests-2.31+-orange.svg)
-![Async Support](https://img.shields.io/badge/Async-✅-brightgreen.svg)
+![Async Support](https://img.shields.io/badge/Sync/Async-✅-brightgreen.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/V1vaak/PROXY6-Telegram-bot)
 
